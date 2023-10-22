@@ -1,0 +1,17 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 6c0ab0542..3ae409689 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -67,9 +67,9 @@ else()
+       set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,--noexecstack")
+     endif()
+     # Clang's integerated assembler does not support debug symbols.
+-    if(NOT CMAKE_ASM_COMPILER_ID MATCHES "Clang")
+-      set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,-g")
+-    endif()
++    # if(NOT CMAKE_ASM_COMPILER_ID MATCHES "Clang")
++    #  set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,-g")
++    # endif()
+   endif()
+ endif()
+ 
