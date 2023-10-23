@@ -28,13 +28,13 @@ jobs:
         cd ~
         curl -L -O https://ziglang.org/builds/$ZIG_VERSION.tar.xz
         tar -xf $ZIG_VERSION.tar.xz
+        echo "~/$ZIG_VERSION/" >> $GITHUB_PATH
 
     - uses: seanmiddleditch/gha-setup-ninja@master
     
     - name: Build BorignSSL
       run: |
         cd ${{ github.workspace }}
-        export PATH=~/$ZIG_VERSION/:$PATH
 
         patch CMakeLists.txt < CMakeLists.txt.patch
         cmake -GNinja -DCMAKE_BUILD_TYPE=Release -B build
