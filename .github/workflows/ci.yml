@@ -8,9 +8,14 @@ on:
   
   workflow_dispatch:
 
+env:
+  ZIG_VERSION: zig-linux-x86_64-0.12.0-dev.1200+5f92b070b
+  CC: zig cc
+  CXX: zig c++
+  ASM: zig cc
+
 jobs:
   build-linux:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -21,19 +26,15 @@ jobs:
     - name: Download Zig
       run: |
         cd ~
-        curl -L -O https://ziglang.org/builds/zig-linux-x86_64-0.12.0-dev.1168+54a4f24ea.tar.xz
-        tar -xf zig-linux-x86_64-0.12.0-dev.1168+54a4f24ea.tar.xz
+        curl -L -O https://ziglang.org/builds/$ZIG_VERSION.tar.xz
+        tar -xf $ZIG_VERSION.tar.xz
 
     - uses: seanmiddleditch/gha-setup-ninja@master
     
     - name: Build BorignSSL
       run: |
         cd ${{ github.workspace }}
-        export PATH=~/zig-linux-x86_64-0.12.0-dev.1168+54a4f24ea/:$PATH
-        export CC="zig cc"
-        export CXX="zig c++"
-        export ASM="zig cc"
-
+        export PATH=~/$ZIG_VERSION/:$PATH
 
         patch CMakeLists.txt < CMakeLists.txt.patch
         cmake -GNinja -DCMAKE_BUILD_TYPE=Release -B build
