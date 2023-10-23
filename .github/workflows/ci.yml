@@ -32,15 +32,14 @@ jobs:
 
     - uses: seanmiddleditch/gha-setup-ninja@master
     
-    - name: Build BorignSSL
+    - name: Build with CMake
       run: |
-        cd ${{ github.workspace }}
-
         patch CMakeLists.txt < CMakeLists.txt.patch
         cmake -GNinja -DCMAKE_BUILD_TYPE=Release -B build
         ninja -C build
 
-        zig build -Doptimize=ReleaseFast
+    - name: Build with Zig build
+      run: zig build --verbose-cc -Doptimize=ReleaseFast
 
     - name: Create Artifact Directory
       run: |
