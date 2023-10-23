@@ -39,6 +39,8 @@ jobs:
         cmake -GNinja -DCMAKE_BUILD_TYPE=Release -B build
         ninja -C build
 
+        zig build -Doptimize=ReleaseFast
+
     - name: Create Artifact Directory
       run: |
         cd ${{ github.workspace }}
@@ -47,11 +49,17 @@ jobs:
         cp build/libssl.a x86_64-linux-boringssl_zig/lib/libssl.a
         cp -r src/include/ x86_64-linux-boringssl_zig/
 
-    - name: Upload Artifact
+    - name: Upload CMake Build
       uses: actions/upload-artifact@v3.1.3
       with:
         name: x86_64-linux-boringssl_zig
         path: ${{ github.workspace }}/x86_64-linux-boringssl_zig/**
+
+    - name: Upload Zig build
+      uses: actions/upload-artifact@v3.1.3
+      with:
+        name: x86_64-linux-boringssl_zig-build
+        path: ${{ github.workspace }}/zig-out/**
 
 #   build-windows:
 #     runs-on: windows-latest
