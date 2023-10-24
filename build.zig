@@ -23,7 +23,7 @@ const boringssl_source = struct {
     test_support_headers: []const []const u8,
     tool: []const []const u8,
     tool_headers: []const []const u8,
-    urandom_test: []const [] const u8,
+    urandom_test: []const []const u8,
 };
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -32,9 +32,7 @@ const alloc = gpa.allocator();
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
-    const @"asm" = b.option(bool, "asm",
-     "Specify whether to use asm or not. Not using asm comes at a huge performance penalty.") 
-    orelse true;
+    const @"asm" = b.option(bool, "asm", "Specify whether to use asm or not. Not using asm comes at a huge performance penalty.") orelse true;
     // const assembly = b.option(bool, "ASM", "") orelse @panic("lol");
     const file = try std.fs.cwd().openFile("sources.json", .{});
     defer file.close();
@@ -42,18 +40,16 @@ pub fn build(b: *std.Build) !void {
     const source_str = try file.readToEndAlloc(alloc, 4294967296);
     defer alloc.free(source_str);
 
-    // std.debug.print("{s}\n", .{source_str});
-
     const source_files = (try std.json.parseFromSlice(boringssl_source, alloc, source_str, .{})).value;
-        
+
     var crypto_source_files: []const []const u8 = switch (@"asm") {
         true => &(crypto_source_c ++ crypto_source_asm),
-        false => &crypto_source_c
+        false => &crypto_source_c,
     };
     _ = crypto_source_files;
     // const headers = b.addInstallDirectory(.{.source_dir = .{.path = "src/include"}, .install_dir=.prefix,.install_subdir="include"});
     // headers.create(b, .{});
-    b.installDirectory(.{.source_dir = .{.path = "src/include"}, .install_dir=.prefix,.install_subdir="include"});
+    b.installDirectory(.{ .source_dir = .{ .path = "src/include" }, .install_dir = .prefix, .install_subdir = "include" });
 
     const crypto_static_lib = b.addStaticLibrary(.{
         .name = "crypto",
@@ -64,29 +60,33 @@ pub fn build(b: *std.Build) !void {
     crypto_static_lib.linkLibC();
     if (target.isLinux()) {
         crypto_static_lib.defineCMacroRaw("_XOPEN_SOURCE=700");
+    } else if (target.isDarwin() and target.getCpuArch() == .aarch64) {
+        crypto_static_lib.defineCMacro("__ARM_NEON", null);
+        crypto_static_lib.defineCMacro("__ARM_FEATURE_CRYPTO", null);
+        // crypto_static_lib.defineCMacro("__ARM_FEATURE_SHA2", null);
+    } else if (target.isWindows()) {
+        // crypto_static_lib.defineCMacro("OPENSSL_WINDOWS", null);
+        crypto_static_lib.defineCMacro("_HAS_EXCEPTIONS", "0");
+        crypto_static_lib.defineCMacro("WIN32_LEAN_AND_MEAN", null);
+        crypto_static_lib.defineCMacro("NOMINMAX", null);
+        crypto_static_lib.defineCMacro("_CRT_SECURE_NO_WARNINGS", null);
     }
     crypto_static_lib.defineCMacro("BORINGSSL_IMPLEMENTATION", null);
     if (!@"asm") {
-        crypto_static_lib.defineCMacro("OPENSSL_NO_ASM", null);    
+        crypto_static_lib.defineCMacro("OPENSSL_NO_ASM", null);
     }
     // static_lib.linkSystemLibrary2("pthread", .{.preferred_link_mode = .Static});
     crypto_static_lib.addIncludePath(std.build.LazyPath.relative("src/include"));
     if (@"asm") {
-        crypto_static_lib.addCSourceFiles(.{
-            .files = source_files.crypto_asm,
-            .flags = &.{
-                "-fvisibility=hidden",
-                "-fno-common",
-            }
-        });
-    }
-    crypto_static_lib.addCSourceFiles(.{
-        .files = source_files.crypto ,
-        .flags = &.{
+        crypto_static_lib.addCSourceFiles(.{ .files = source_files.crypto_asm, .flags = &.{
             "-fvisibility=hidden",
             "-fno-common",
-        }
-    });
+        } });
+    }
+    crypto_static_lib.addCSourceFiles(.{ .files = source_files.crypto, .flags = &.{
+        "-fvisibility=hidden",
+        "-fno-common",
+    } });
     // lib.addCSourceFiles(.{
     //     .files = &asm_source,
     // });
@@ -102,29 +102,34 @@ pub fn build(b: *std.Build) !void {
     crypto_shared_lib.linkLibC();
     if (target.isLinux()) {
         crypto_shared_lib.defineCMacroRaw("_XOPEN_SOURCE=700");
+    } else if (target.isDarwin()) {
+        crypto_shared_lib.defineCMacro("__ARM_NEON", null);
+        crypto_shared_lib.defineCMacro("__ARM_FEATURE_CRYPTO", null);
+    } else if (target.isWindows()) {
+        // crypto_shared_lib.defineCMacro("OPENSSL_WINDOWS", null);
+        
+        crypto_shared_lib.defineCMacro("_HAS_EXCEPTIONS", "0");
+        crypto_shared_lib.defineCMacro("WIN32_LEAN_AND_MEAN", null);
+        crypto_shared_lib.defineCMacro("NOMINMAX", null);
+        crypto_shared_lib.defineCMacro("_CRT_SECURE_NO_WARNINGS", null);
     }
+
     crypto_shared_lib.defineCMacro("BORINGSSL_IMPLEMENTATION", null);
     crypto_shared_lib.defineCMacro("BORINGSSL_SHARED_LIBRARY", null);
     if (!@"asm") {
-        crypto_shared_lib.defineCMacro("OPENSSL_NO_ASM", null);    
+        crypto_shared_lib.defineCMacro("OPENSSL_NO_ASM", null);
     }
     crypto_shared_lib.addIncludePath(std.build.LazyPath.relative("src/include"));
     if (@"asm") {
-        crypto_shared_lib.addCSourceFiles(.{
-            .files = source_files.crypto_asm,
-            .flags = &.{
-                "-fvisibility=hidden",
-                "-fno-common",
-            }
-        });
-    }
-    crypto_shared_lib.addCSourceFiles(.{
-        .files = source_files.crypto ,
-        .flags = &.{
+        crypto_shared_lib.addCSourceFiles(.{ .files = source_files.crypto_asm, .flags = &.{
             "-fvisibility=hidden",
             "-fno-common",
-        }
-    });
+        } });
+    }
+    crypto_shared_lib.addCSourceFiles(.{ .files = source_files.crypto, .flags = &.{
+        "-fvisibility=hidden",
+        "-fno-common",
+    } });
 
     const ssl_static_lib = b.addStaticLibrary(.{
         .name = "ssl",
@@ -138,15 +143,12 @@ pub fn build(b: *std.Build) !void {
     ssl_static_lib.linkLibrary(crypto_static_lib);
     // static_lib.linkSystemLibrary2("pthread", .{.preferred_link_mode = .Static});
     ssl_static_lib.addIncludePath(std.build.LazyPath.relative("src/include"));
-    ssl_static_lib.addCSourceFiles(.{
-        .files = source_files.ssl,
-        .flags = &.{
-            "-fvisibility=hidden",
-            "-fno-common",
-            "-fno-exceptions",
-            "-fno-rtti",
-        }
-    });
+    ssl_static_lib.addCSourceFiles(.{ .files = source_files.ssl, .flags = &.{
+        "-fvisibility=hidden",
+        "-fno-common",
+        "-fno-exceptions",
+        "-fno-rtti",
+    } });
 
     const ssl_shared_lib = b.addSharedLibrary(.{
         .name = "ssl",
@@ -154,7 +156,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
     });
     b.installArtifact(ssl_shared_lib);
-    
+
     ssl_shared_lib.linkLibC();
     ssl_shared_lib.linkLibCpp();
     ssl_shared_lib.defineCMacro("BORINGSSL_IMPLEMENTATION", null);
@@ -163,15 +165,12 @@ pub fn build(b: *std.Build) !void {
     ssl_shared_lib.linkLibrary(crypto_static_lib);
     // static_lib.linkSystemLibrary2("pthread", .{.preferred_link_mode = .Static});
     ssl_shared_lib.addIncludePath(std.build.LazyPath.relative("src/include"));
-    ssl_shared_lib.addCSourceFiles(.{
-        .files = source_files.ssl,
-        .flags = &.{
-            "-fvisibility=hidden",
-            "-fno-common",
-            "-fno-exceptions",
-            "-fno-rtti",
-        }
-    });
+    ssl_shared_lib.addCSourceFiles(.{ .files = source_files.ssl, .flags = &.{
+        "-fvisibility=hidden",
+        "-fno-common",
+        "-fno-exceptions",
+        "-fno-rtti",
+    } });
 
     const bssl = b.addExecutable(.{
         .name = "bssl",
@@ -186,20 +185,17 @@ pub fn build(b: *std.Build) !void {
     bssl.linkLibrary(ssl_static_lib);
     bssl.addIncludePath(std.build.LazyPath.relative("src/include"));
     bssl.addIncludePath(std.build.LazyPath.relative("src/tool"));
-    bssl.addCSourceFiles(.{
-        .files = source_files.tool,
-        .flags = &.{
-            "-fvisibility=hidden",
-            "-fno-common",
-            "-fno-exceptions",
-            "-fno-rtti",
-        }
-    });
+    bssl.addCSourceFiles(.{ .files = source_files.tool, .flags = &.{
+        "-fvisibility=hidden",
+        "-fno-common",
+        "-fno-exceptions",
+        "-fno-rtti",
+    } });
 }
 
 // const crypto_source_files = crypto_source_asm ++ crypto_source_c;
 
-const crypto_source_c = [_][]const u8 {
+const crypto_source_c = [_][]const u8{
     "err_data.c",
     "src/crypto/asn1/a_bitstr.c",
     "src/crypto/asn1/a_bool.c",
@@ -429,7 +425,7 @@ const crypto_source_c = [_][]const u8 {
     "src/crypto/x509v3/v3_utl.c",
 };
 
-const crypto_source_asm = [_][]const u8 {
+const crypto_source_asm = [_][]const u8{
     "apple-aarch64/crypto/chacha/chacha-armv8-apple.S",
     "apple-aarch64/crypto/cipher_extra/chacha20_poly1305_armv8-apple.S",
     "apple-aarch64/crypto/fipsmodule/aesv8-armv8-apple.S",
@@ -570,7 +566,7 @@ const crypto_source_asm = [_][]const u8 {
     "win-aarch64/crypto/test/trampoline-armv8-win.S",
 };
 
-const ssl_sources = [_][]const u8 {
+const ssl_sources = [_][]const u8{
     "src/ssl/bio_ssl.cc",
     "src/ssl/d1_both.cc",
     "src/ssl/d1_lib.cc",
@@ -608,10 +604,9 @@ const ssl_sources = [_][]const u8 {
     "src/ssl/tls13_server.cc",
     "src/ssl/tls_method.cc",
     "src/ssl/tls_record.cc",
-
 };
 
-const bssl_sources = [_][] const u8 {
+const bssl_sources = [_][]const u8{
     "src/tool/args.cc",
     "src/tool/ciphers.cc",
     "src/tool/client.cc",
