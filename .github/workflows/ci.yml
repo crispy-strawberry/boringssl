@@ -70,7 +70,8 @@ jobs:
       run: |
         cd $HOME
         curl -L -O https://ziglang.org/builds/zig-windows-x86_64-0.12.0-dev.1261+bb0419599.zip
-        Expand-Archive zig-windows-x86_64-0.12.0-dev.1261+bb0419599.zip -DestinationPath $HOME
+        tar -xf zig-windows-x86_64-0.12.0-dev.1261+bb0419599.zip
+#        Expand-Archive zig-windows-x86_64-0.12.0-dev.1261+bb0419599.zip -DestinationPath $HOME
 
     - uses: seanmiddleditch/gha-setup-ninja@master
 
@@ -84,18 +85,8 @@ jobs:
 
         zig build -Dtarget=x86_64-windows-msvc -Doptimize=ReleaseFast -Dasm=false
 
-#        $env:ASM ="zig cc"
-
-    # - name: Create Artifact Directory
-    #   run: |
-    #     cd ${{ github.workspace }}
-    #     mkdir -p x86_64-windows-boringssl_zig/lib
-    #     cp build/crypto/*.lib x86_64-windows-boringssl_zig/lib/
-    #     cp build/ssl/*.lib x86_64-windows-boringssl_zig/lib/
-    #     cp -Recurse include/ x86_64-windows-boringssl_zig/
-
-    # - name: Upload Artifact
-    #   uses: actions/upload-artifact@v3.1.3
-    #   with:
-    #     name: x86_64-windows-boringssl_zig
-    #     path: ${{ github.workspace }}/x86_64-windows-boringssl_zig/**
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3.1.3
+      with:
+        name: x86_64-windows-boringssl_zig
+        path: ${{ github.workspace }}/zig-out/**
