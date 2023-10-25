@@ -33,7 +33,7 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
     const @"asm" = b.option(bool, "asm", "Specify whether to use asm or not. Not using asm comes at a huge performance penalty.") orelse true;
-    // const assembly = b.option(bool, "ASM", "") orelse @panic("lol");
+    
     const file = try std.fs.cwd().openFile("sources.json", .{});
     defer file.close();
 
@@ -47,8 +47,7 @@ pub fn build(b: *std.Build) !void {
         false => &crypto_source_c,
     };
     _ = crypto_source_files;
-    // const headers = b.addInstallDirectory(.{.source_dir = .{.path = "src/include"}, .install_dir=.prefix,.install_subdir="include"});
-    // headers.create(b, .{});
+
     b.installDirectory(.{ .source_dir = .{ .path = "src/include" }, .install_dir = .prefix, .install_subdir = "include" });
 
     const crypto_static_lib = b.addStaticLibrary(.{
@@ -57,19 +56,21 @@ pub fn build(b: *std.Build) !void {
         .target = target,
     });
     b.installArtifact(crypto_static_lib);
+    
     crypto_static_lib.linkLibC();
+    
     if (target.isLinux()) {
         crypto_static_lib.defineCMacroRaw("_XOPEN_SOURCE=700");
     } else if (target.isDarwin() and target.getCpuArch() == .aarch64) {
         crypto_static_lib.defineCMacro("__ARM_NEON", null);
         crypto_static_lib.defineCMacro("__ARM_FEATURE_CRYPTO", null);
-        // crypto_static_lib.defineCMacro("__ARM_FEATURE_SHA2", null);
     } else if (target.isWindows()) {
-        // crypto_static_lib.defineCMacro("OPENSSL_WINDOWS", null);
         crypto_static_lib.defineCMacro("_HAS_EXCEPTIONS", "0");
         crypto_static_lib.defineCMacro("WIN32_LEAN_AND_MEAN", null);
         crypto_static_lib.defineCMacro("NOMINMAX", null);
         crypto_static_lib.defineCMacro("_CRT_SECURE_NO_WARNINGS", null);
+        crypto_static_lib.defineCMacro("strdup", "_strdup");
+	    crypto_static_lib.linkSystemLibrary("ws2_32");
     }
     crypto_static_lib.defineCMacro("BORINGSSL_IMPLEMENTATION", null);
     if (!@"asm") {
@@ -93,6 +94,7 @@ pub fn build(b: *std.Build) !void {
     // lib.addCSourceFiles(.{
     //     .files = &crypto_source,
     // });
+
     const crypto_shared_lib = b.addSharedLibrary(.{
         .name = "crypto",
         .optimize = optimize,
@@ -102,16 +104,16 @@ pub fn build(b: *std.Build) !void {
     crypto_shared_lib.linkLibC();
     if (target.isLinux()) {
         crypto_shared_lib.defineCMacroRaw("_XOPEN_SOURCE=700");
-    } else if (target.isDarwin()) {
+    } else if (target.isDarwin() and target.getCpuArch() == .aarch64) {
         crypto_shared_lib.defineCMacro("__ARM_NEON", null);
         crypto_shared_lib.defineCMacro("__ARM_FEATURE_CRYPTO", null);
-    } else if (target.isWindows()) {
-        // crypto_shared_lib.defineCMacro("OPENSSL_WINDOWS", null);
-        
+    } else if (target.isWindows()) {        
         crypto_shared_lib.defineCMacro("_HAS_EXCEPTIONS", "0");
         crypto_shared_lib.defineCMacro("WIN32_LEAN_AND_MEAN", null);
         crypto_shared_lib.defineCMacro("NOMINMAX", null);
         crypto_shared_lib.defineCMacro("_CRT_SECURE_NO_WARNINGS", null);
+        crypto_shared_lib.defineCMacro("strdup", "_strdup");
+	    crypto_shared_lib.linkSystemLibrary("ws2_32");
     }
 
     crypto_shared_lib.defineCMacro("BORINGSSL_IMPLEMENTATION", null);
@@ -138,7 +140,16 @@ pub fn build(b: *std.Build) !void {
     });
     b.installArtifact(ssl_static_lib);
     ssl_static_lib.linkLibC();
-    ssl_static_lib.linkLibCpp();
+    if (!target.isWindows()) {
+        ssl_static_lib.linkLibCpp();
+    } else {        
+        ssl_static_lib.defineCMacro("_HAS_EXCEPTIONS", "0");
+        ssl_static_lib.defineCMacro("WIN32_LEAN_AND_MEAN", null);
+        ssl_static_lib.defineCMacro("NOMINMAX", null);
+        ssl_static_lib.defineCMacro("_CRT_SECURE_NO_WARNINGS", null);
+        ssl_static_lib.defineCMacro("strdup", "_strdup");
+	    ssl_static_lib.linkSystemLibrary("ws2_32");
+    }
     ssl_static_lib.defineCMacro("BORINGSSL_IMPLEMENTATION", null);
     ssl_static_lib.linkLibrary(crypto_static_lib);
     // static_lib.linkSystemLibrary2("pthread", .{.preferred_link_mode = .Static});
@@ -158,7 +169,16 @@ pub fn build(b: *std.Build) !void {
     b.installArtifact(ssl_shared_lib);
 
     ssl_shared_lib.linkLibC();
-    ssl_shared_lib.linkLibCpp();
+    if (!target.isWindows()) {
+        ssl_shared_lib.linkLibCpp();
+    } else {        
+        ssl_shared_lib.defineCMacro("_HAS_EXCEPTIONS", "0");
+        ssl_shared_lib.defineCMacro("WIN32_LEAN_AND_MEAN", null);
+        ssl_shared_lib.defineCMacro("NOMINMAX", null);
+        ssl_shared_lib.defineCMacro("_CRT_SECURE_NO_WARNINGS", null);
+        ssl_shared_lib.defineCMacro("strdup", "_strdup");
+	    ssl_shared_lib.linkSystemLibrary("ws2_32");
+    }
     ssl_shared_lib.defineCMacro("BORINGSSL_IMPLEMENTATION", null);
     ssl_shared_lib.defineCMacro("BORINGSSL_SHARED_LIBRARY", null);
 
@@ -179,7 +199,9 @@ pub fn build(b: *std.Build) !void {
     });
     b.installArtifact(bssl);
     bssl.linkLibC();
-    bssl.linkLibCpp();
+    if (!target.isWindows()) {
+        bssl.linkLibCpp();
+    }
     bssl.defineCMacro("BORINGSSL_IMPLEMENTATION", null);
     bssl.linkLibrary(crypto_static_lib);
     bssl.linkLibrary(ssl_static_lib);
