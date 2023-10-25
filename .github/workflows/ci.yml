@@ -61,44 +61,41 @@ jobs:
         name: x86_64-linux-boringssl_zig-build
         path: ${{ github.workspace }}/zig-out/**
 
-#   build-windows:
-#     runs-on: windows-latest
+  build-windows:
+    runs-on: windows-latest
 
-#     steps:
-#     - uses: actions/checkout@v3
-#     - name: Download Zig
-#       run: |
-#         cd $HOME
-#         curl -L -O https://ziglang.org/builds/zig-windows-x86_64-0.12.0-dev.983+78f2ae7f2.zip
-#         Expand-Archive zig-windows-x86_64-0.12.0-dev.983+78f2ae7f2.zip -DestinationPath $HOME
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download Zig
+      run: |
+        cd $HOME
+        curl -L -O https://ziglang.org/builds/zig-windows-x86_64-0.12.0-dev.1261+bb0419599.zip
+        Expand-Archive zig-windows-x86_64-0.12.0-dev.1261+bb0419599.zip -DestinationPath $HOME
 
-#     - uses: seanmiddleditch/gha-setup-ninja@master
+    - uses: seanmiddleditch/gha-setup-ninja@master
 
-#     - name: Set up NASM
-#       uses: ilammy/setup-nasm@v1.4.0
+    - name: Set up NASM
+      uses: ilammy/setup-nasm@v1.4.0
 
-#     - name: Build BorignSSL
-#       run: |
-#         cd ${{ github.workspace }}
-#         $env:PATH += ";$HOME/zig-windows-x86_64-0.12.0-dev.983+78f2ae7f2/"
-#         $env:CC = "zig cc -target x86_64-windows-msvc"
-#         $env:CXX = "zig c++ -target x86_64-windows-msvc"
-#         mkdir build && cd build
-#         cmake -GNinja -DCMAKE_BUILD_TYPE=Release ..
-#         ninja
+    - name: Build BorignSSL
+      run: |
+        cd ${{ github.workspace }}
+        $env:PATH += ";$HOME/zig-windows-x86_64-0.12.0-dev.1261+bb0419599/"
 
-# #        $env:ASM ="zig cc"
+        zig build -Dtarget=x86_64-windows-msvc -Doptimize=ReleaseFast -Dasm=false
 
-#     - name: Create Artifact Directory
-#       run: |
-#         cd ${{ github.workspace }}
-#         mkdir -p x86_64-windows-boringssl_zig/lib
-#         cp build/crypto/*.lib x86_64-windows-boringssl_zig/lib/
-#         cp build/ssl/*.lib x86_64-windows-boringssl_zig/lib/
-#         cp -Recurse include/ x86_64-windows-boringssl_zig/
+#        $env:ASM ="zig cc"
 
-#     - name: Upload Artifact
-#       uses: actions/upload-artifact@v3.1.3
-#       with:
-#         name: x86_64-windows-boringssl_zig
-#         path: ${{ github.workspace }}/x86_64-windows-boringssl_zig/**
+    # - name: Create Artifact Directory
+    #   run: |
+    #     cd ${{ github.workspace }}
+    #     mkdir -p x86_64-windows-boringssl_zig/lib
+    #     cp build/crypto/*.lib x86_64-windows-boringssl_zig/lib/
+    #     cp build/ssl/*.lib x86_64-windows-boringssl_zig/lib/
+    #     cp -Recurse include/ x86_64-windows-boringssl_zig/
+
+    # - name: Upload Artifact
+    #   uses: actions/upload-artifact@v3.1.3
+    #   with:
+    #     name: x86_64-windows-boringssl_zig
+    #     path: ${{ github.workspace }}/x86_64-windows-boringssl_zig/**
