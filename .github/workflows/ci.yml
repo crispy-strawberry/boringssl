@@ -52,13 +52,13 @@ jobs:
     - name: Upload CMake Build
       uses: actions/upload-artifact@v3.1.3
       with:
-        name: x86_64-linux-boringssl_zig
+        name: x86_64-linux-cmake-libcrypto+libssl
         path: ${{ github.workspace }}/x86_64-linux-boringssl_zig/**
 
     - name: Upload Zig build
       uses: actions/upload-artifact@v3.1.3
       with:
-        name: x86_64-linux-boringssl_zig-build
+        name: x86_64-linux-libcrypto+libssl+bssl
         path: ${{ github.workspace }}/zig-out/**
 
   build-windows:
@@ -88,5 +88,5 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v3.1.3
       with:
-        name: x86_64-windows-boringssl_zig
+        name: x86_64-windows-libcrypto+libssl+bssl
         path: ${{ github.workspace }}/zig-out/**
