@@ -70,7 +70,7 @@ pub fn build(b: *std.Build) !void {
         crypto_static_lib.defineCMacro("NOMINMAX", null);
         crypto_static_lib.defineCMacro("_CRT_SECURE_NO_WARNINGS", null);
         crypto_static_lib.defineCMacro("strdup", "_strdup");
-	    crypto_static_lib.linkSystemLibrary("ws2_32");
+	crypto_static_lib.linkSystemLibrary("ws2_32");
     }
     crypto_static_lib.defineCMacro("BORINGSSL_IMPLEMENTATION", null);
     if (!@"asm") {
@@ -113,7 +113,7 @@ pub fn build(b: *std.Build) !void {
         crypto_shared_lib.defineCMacro("NOMINMAX", null);
         crypto_shared_lib.defineCMacro("_CRT_SECURE_NO_WARNINGS", null);
         crypto_shared_lib.defineCMacro("strdup", "_strdup");
-	    crypto_shared_lib.linkSystemLibrary("ws2_32");
+	crypto_shared_lib.linkSystemLibrary("ws2_32");
     }
 
     crypto_shared_lib.defineCMacro("BORINGSSL_IMPLEMENTATION", null);
@@ -201,6 +201,13 @@ pub fn build(b: *std.Build) !void {
     bssl.linkLibC();
     if (!target.isWindows()) {
         bssl.linkLibCpp();
+    } else {
+        bssl.defineCMacro("_HAS_EXCEPTIONS", "0");
+        bssl.defineCMacro("WIN32_LEAN_AND_MEAN", null);
+        bssl.defineCMacro("NOMINMAX", null);
+        bssl.defineCMacro("_CRT_SECURE_NO_WARNINGS", null);
+        bssl.defineCMacro("strdup", "_strdup");
+	bssl.linkSystemLibrary("ws2_32");
     }
     bssl.defineCMacro("BORINGSSL_IMPLEMENTATION", null);
     bssl.linkLibrary(crypto_static_lib);
