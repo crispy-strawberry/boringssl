@@ -82,7 +82,7 @@ jobs:
     - name: Build BorignSSL
       run: |
         cd ${{ github.workspace }}
-
+        $env:PATH += "$HOME/zig-windows-x86_64-0.12.0-dev.1272+5c5d1f93c/;"
         zig build -Dtarget=x86_64-windows-msvc -Doptimize=ReleaseFast -Dasm=false
 
     - name: Upload Artifact
