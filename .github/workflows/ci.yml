@@ -78,7 +78,7 @@ jobs:
     - name: Set up NASM
       uses: ilammy/setup-nasm@v1.4.0
 
-    - name: Build BorignSSL
+    - name: Build BoringSSL
       run: |
         cd ${{ github.workspace }}
         $env:PATH += ";$HOME/zig-windows-x86_64-0.12.0-dev.1272+5c5d1f93c/;"
