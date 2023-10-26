@@ -2,7 +2,7 @@
 [![BoringSSL Builder](https://github.com/crispy-strawberry/boringssl/actions/workflows/ci.yml/badge.svg)](https://github.com/crispy-strawberry/boringssl/actions/workflows/ci.yml)
 
 BoringSSL ported to the zig build system. 
-Builds for Linux, MacOS and Windows. (You can get binaries for linux and windows
+Builds for Linux, MacOS and Windows. (You can get binaries for windows, linux and macos
 in the [build artifacts](https://github.com/crispy-strawberry102938/boringssl/actions))
 
 Uses ASM by default. It can be turned off by passing `-Dasm=false` to
