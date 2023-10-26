@@ -90,3 +90,29 @@ jobs:
       with:
         name: x86_64-windows-libcrypto+libssl+bssl
         path: ${{ github.workspace }}/zig-out/**
+
+
+  build-apple:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: main-with-bazel
+
+    - name: Download Zig
+      run: |
+        cd ~
+        curl -L -O https://ziglang.org/builds/$ZIG_VERSION.tar.xz
+        tar -xf $ZIG_VERSION.tar.xz
+        echo "~/$ZIG_VERSION/" >> $GITHUB_PATH
+
+    - name: Build with Zig build
+      run: zig build --verbose-cc -Dtarget=aarch64-macos -Doptimize=ReleaseFast
+    
+    - name: Upload Zig build
+      uses: actions/upload-artifact@v3.1.3
+      with:
+        name: aarch64-linux-libcrypto+libssl+bssl
+        path: ${{ github.workspace }}/zig-out/**
+
