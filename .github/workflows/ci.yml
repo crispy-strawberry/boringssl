@@ -69,8 +69,8 @@ jobs:
     - name: Download Zig
       run: |
         cd $HOME
-        curl -L -O https://ziglang.org/builds/zig-windows-x86_64-$ZIG_VERSION.zip
-        tar -xf zig-windows-x86_64-$ZIG_VERSION.zip
+        curl -L -O "https://ziglang.org/builds/zig-windows-x86_64-$ZIG_VERSION.zip"
+        tar -xf "zig-windows-x86_64-$ZIG_VERSION.zip"
         echo "$HOME/zig-windows-x86_64-$ZIG_VERSION/" >> $GITHUB_PATH
 #        Expand-Archive zig-windows-x86_64-0.12.0-dev.1261+bb0419599.zip -DestinationPath $HOME
 
