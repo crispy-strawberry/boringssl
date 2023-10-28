@@ -26,9 +26,6 @@ const boringssl_source = struct {
     urandom_test: []const []const u8,
 };
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-const alloc = gpa.allocator();
-
 pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
@@ -37,10 +34,10 @@ pub fn build(b: *std.Build) !void {
     const file = try std.fs.cwd().openFile("sources.json", .{});
     defer file.close();
 
-    const source_str = try file.readToEndAlloc(alloc, 4294967296);
-    defer alloc.free(source_str);
+    const source_str = try file.readToEndAlloc(b.allocator, 4294967296);
+    defer b.allocator.free(source_str);
 
-    const source_files = (try std.json.parseFromSlice(boringssl_source, alloc, source_str, .{})).value;
+    const source_files = (try std.json.parseFromSlice(boringssl_source, b.allocator, source_str, .{})).value;
 
     var crypto_source_files: []const []const u8 = switch (@"asm") {
         true => &(crypto_source_c ++ crypto_source_asm),
