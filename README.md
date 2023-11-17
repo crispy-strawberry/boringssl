@@ -1,6 +1,8 @@
 # boringssl
 [![BoringSSL Builder](https://github.com/crispy-strawberry/boringssl/actions/workflows/ci.yml/badge.svg)](https://github.com/crispy-strawberry/boringssl/actions/workflows/ci.yml)
 
+**To use with package manager, see [package manager](https://github.com/crispy-strawberry/boringssl/tree/package-manager) branch**
+
 BoringSSL ported to the zig build system. 
 Builds for Linux, MacOS and Windows. (You can get binaries for windows, linux and macos
 in the [build artifacts](https://github.com/crispy-strawberry102938/boringssl/actions))
