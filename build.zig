@@ -31,7 +31,11 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const @"asm" = b.option(bool, "asm", "Specify whether to use asm or not. Not using asm comes at a huge performance penalty.") orelse true;
     
-    const file = try std.fs.cwd().openFile("sources.json", .{});
+    const upstream = b.dependency("boringssl", .{});
+
+    const sources_json = upstream.path("sources.json").getPath(b);
+
+    const file = try std.fs.cwd().openFile(sources_json, .{});
     defer file.close();
 
     const source_str = try file.readToEndAlloc(b.allocator, 4294967296);
@@ -45,7 +49,7 @@ pub fn build(b: *std.Build) !void {
     };
     _ = crypto_source_files;
 
-    b.installDirectory(.{ .source_dir = .{ .path = "src/include" }, .install_dir = .prefix, .install_subdir = "include" });
+    b.installDirectory(.{ .source_dir = upstream.path("src/include"), .install_dir = .prefix, .install_subdir = "include" });
 
     const crypto_static_lib = b.addStaticLibrary(.{
         .name = "crypto",
@@ -74,23 +78,36 @@ pub fn build(b: *std.Build) !void {
         crypto_static_lib.defineCMacro("OPENSSL_NO_ASM", null);
     }
     // static_lib.linkSystemLibrary2("pthread", .{.preferred_link_mode = .Static});
-    crypto_static_lib.addIncludePath(std.build.LazyPath.relative("src/include"));
+    crypto_static_lib.addIncludePath(upstream.path("src/include"));
     if (@"asm") {
-        crypto_static_lib.addCSourceFiles(.{ .files = source_files.crypto_asm, .flags = &.{
-            "-fvisibility=hidden",
-            "-fno-common",
-        } });
+        // crypto_static_lib.addCSourceFiles(.{ .files = source_files.crypto_asm, .flags = &.{
+        //     "-fvisibility=hidden",
+        //     "-fno-common",
+        // } });
+        for (source_files.crypto_asm) |asm_file| {
+            crypto_static_lib.addCSourceFile(.{
+                .file = .{ .path = upstream.path(asm_file).getPath(b) },
+                .flags = &.{
+                    "-fvisibility=hidden",
+                    "-fno-common",
+                },
+            });
+        }
     }
-    crypto_static_lib.addCSourceFiles(.{ .files = source_files.crypto, .flags = &.{
-        "-fvisibility=hidden",
-        "-fno-common",
-    } });
-    // lib.addCSourceFiles(.{
-    //     .files = &asm_source,
-    // });
-    // lib.addCSourceFiles(.{
-    //     .files = &crypto_source,
-    // });
+    for (source_files.crypto) |c_file| {
+    
+        crypto_static_lib.addCSourceFile(.{
+            .file = .{ .path = upstream.path(c_file).getPath(b) },
+            .flags = &.{
+                "-fvisibility=hidden",
+                "-fno-common",
+            },
+        });
+    }
+    // crypto_static_lib.addCSourceFiles(.{ .files = source_files.crypto, .flags = &.{
+    //     "-fvisibility=hidden",
+    //     "-fno-common",
+    // } });
 
     const crypto_shared_lib = b.addSharedLibrary(.{
         .name = "crypto",
@@ -118,17 +135,31 @@ pub fn build(b: *std.Build) !void {
     if (!@"asm") {
         crypto_shared_lib.defineCMacro("OPENSSL_NO_ASM", null);
     }
-    crypto_shared_lib.addIncludePath(std.build.LazyPath.relative("src/include"));
+    crypto_shared_lib.addIncludePath(upstream.path("src/include"));
     if (@"asm") {
-        crypto_shared_lib.addCSourceFiles(.{ .files = source_files.crypto_asm, .flags = &.{
-            "-fvisibility=hidden",
-            "-fno-common",
-        } });
+        // crypto_shared_lib.addCSourceFiles(.{ .files = source_files.crypto_asm, .flags = &.{
+        //     "-fvisibility=hidden",
+        //     "-fno-common",
+        // } });
+        for (source_files.crypto_asm) |asm_file| {
+            crypto_shared_lib.addCSourceFile(.{
+                .file = .{ .path = upstream.path(asm_file).getPath(b) },
+                .flags = &.{
+                    "-fvisibility=hidden",
+                    "-fno-common",
+                },
+            });
+        }
     }
-    crypto_shared_lib.addCSourceFiles(.{ .files = source_files.crypto, .flags = &.{
-        "-fvisibility=hidden",
-        "-fno-common",
-    } });
+    for (source_files.crypto) |c_file| {
+        crypto_shared_lib.addCSourceFile(.{
+            .file = .{ .path = upstream.path(c_file).getPath(b) },
+            .flags = &.{
+                "-fvisibility=hidden",
+                "-fno-common",
+            },
+        });
+    }
 
     const ssl_static_lib = b.addStaticLibrary(.{
         .name = "ssl",
@@ -150,13 +181,18 @@ pub fn build(b: *std.Build) !void {
     ssl_static_lib.defineCMacro("BORINGSSL_IMPLEMENTATION", null);
     ssl_static_lib.linkLibrary(crypto_static_lib);
     // static_lib.linkSystemLibrary2("pthread", .{.preferred_link_mode = .Static});
-    ssl_static_lib.addIncludePath(std.build.LazyPath.relative("src/include"));
-    ssl_static_lib.addCSourceFiles(.{ .files = source_files.ssl, .flags = &.{
-        "-fvisibility=hidden",
-        "-fno-common",
-        "-fno-exceptions",
-        "-fno-rtti",
-    } });
+    ssl_static_lib.addIncludePath(upstream.path("src/include"));
+    for (source_files.ssl) |src| {
+        ssl_static_lib.addCSourceFile(.{ 
+            .file = .{.path = upstream.path(src).getPath(b)}, 
+            .flags = &.{
+            "-fvisibility=hidden",
+            "-fno-common",
+            "-fno-exceptions",
+            "-fno-rtti",
+        } });
+    }
+    
 
     const ssl_shared_lib = b.addSharedLibrary(.{
         .name = "ssl",
@@ -181,13 +217,17 @@ pub fn build(b: *std.Build) !void {
 
     ssl_shared_lib.linkLibrary(crypto_static_lib);
     // static_lib.linkSystemLibrary2("pthread", .{.preferred_link_mode = .Static});
-    ssl_shared_lib.addIncludePath(std.build.LazyPath.relative("src/include"));
-    ssl_shared_lib.addCSourceFiles(.{ .files = source_files.ssl, .flags = &.{
-        "-fvisibility=hidden",
-        "-fno-common",
-        "-fno-exceptions",
-        "-fno-rtti",
-    } });
+    ssl_shared_lib.addIncludePath(upstream.path("src/include"));
+    for (source_files.ssl) |src| {
+        ssl_shared_lib.addCSourceFile(.{ 
+            .file = .{.path = upstream.path(src).getPath(b)}, 
+            .flags = &.{
+            "-fvisibility=hidden",
+            "-fno-common",
+            "-fno-exceptions",
+            "-fno-rtti",
+        } });
+    }
 
     const bssl = b.addExecutable(.{
         .name = "bssl",
@@ -209,14 +249,18 @@ pub fn build(b: *std.Build) !void {
     bssl.defineCMacro("BORINGSSL_IMPLEMENTATION", null);
     bssl.linkLibrary(crypto_static_lib);
     bssl.linkLibrary(ssl_static_lib);
-    bssl.addIncludePath(std.build.LazyPath.relative("src/include"));
-    bssl.addIncludePath(std.build.LazyPath.relative("src/tool"));
-    bssl.addCSourceFiles(.{ .files = source_files.tool, .flags = &.{
-        "-fvisibility=hidden",
-        "-fno-common",
-        "-fno-exceptions",
-        "-fno-rtti",
-    } });
+    bssl.addIncludePath(upstream.path("src/include"));
+    bssl.addIncludePath(upstream.path("src/tool"));
+    for (source_files.tool) |src| {
+        bssl.addCSourceFile(.{ 
+            .file = .{.path = upstream.path(src).getPath(b)}, 
+            .flags = &.{
+            "-fvisibility=hidden",
+            "-fno-common",
+            "-fno-exceptions",
+            "-fno-rtti",
+        } });
+    }
 }
 
 // const crypto_source_files = crypto_source_asm ++ crypto_source_c;

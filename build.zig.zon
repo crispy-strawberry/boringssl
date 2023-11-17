@@ -1,0 +1,12 @@
+.{
+    .name = "boringssl_zig",
+    .version = "0.1.0",
+    .paths = .{""},
+
+    .dependencies = .{
+        .boringssl = .{
+            .url = "git+https://github.com/google/boringssl#main-with-bazel",
+            .hash = "1220dba7485f1b30234d29a290a1b462e5fa0dfa9d17b98d97b05497c2e9554e64af",
+        }
+    }
+}
