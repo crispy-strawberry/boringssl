@@ -5,8 +5,8 @@
 
     .dependencies = .{
         .boringssl = .{
-            .url = "git+https://github.com/google/boringssl#main-with-bazel",
-            .hash = "1220dba7485f1b30234d29a290a1b462e5fa0dfa9d17b98d97b05497c2e9554e64af",
+            .url = "git+https://boringssl.googlesource.com/boringssl#main-with-bazel",
+            .hash = "122083d1229526b33eaa798ae226058dec26f68ad0bd04189fe3718784f3b197d816"
         }
     }
 }
