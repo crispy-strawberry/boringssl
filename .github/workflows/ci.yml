@@ -1,0 +1,116 @@
+name: BoringSSL Builder
+
+on:
+  push:
+    branches: [ "main-with-bazel" ]
+  pull_request:
+    branches: [ "main-with-bazel" ]
+  
+  workflow_dispatch:
+
+env:
+  ZIG_VERSION: 0.12.0-dev.1272+5c5d1f93c
+  CC: zig cc
+  CXX: zig c++
+  ASM: zig cc
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: main-with-bazel
+
+    - name: Download Zig
+      run: |
+        cd ~
+        curl -L -O https://ziglang.org/builds/zig-linux-x86_64-$ZIG_VERSION.tar.xz
+        tar -xf zig-linux-x86_64-$ZIG_VERSION.tar.xz
+        echo "~/zig-linux-x86_64-$ZIG_VERSION/" >> $GITHUB_PATH
+
+    - uses: seanmiddleditch/gha-setup-ninja@master
+    
+    - name: Build with CMake
+      run: |
+        patch CMakeLists.txt < CMakeLists.txt.patch
+        cmake -GNinja -DCMAKE_BUILD_TYPE=Release -B build
+        ninja -C build
+
+    - name: Build with Zig build
+      run: zig build --verbose-cc -Doptimize=ReleaseFast
+
+    - name: Create Artifact Directory
+      run: |
+        cd ${{ github.workspace }}
+        mkdir -p x86_64-linux-boringssl_zig/lib
+        cp build/libcrypto.a x86_64-linux-boringssl_zig/lib/libcrypto.a
+        cp build/libssl.a x86_64-linux-boringssl_zig/lib/libssl.a
+        cp -r src/include/ x86_64-linux-boringssl_zig/
+
+    - name: Upload CMake Build
+      uses: actions/upload-artifact@v3.1.3
+      with:
+        name: x86_64-linux-cmake-libcrypto+libssl
+        path: ${{ github.workspace }}/x86_64-linux-boringssl_zig/**
+
+    - name: Upload Zig build
+      uses: actions/upload-artifact@v3.1.3
+      with:
+        name: x86_64-linux-libcrypto+libssl+bssl
+        path: ${{ github.workspace }}/zig-out/**
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Download Zig
+      run: |
+        cd $HOME
+        curl -L -O https://ziglang.org/builds/zig-windows-x86_64-0.12.0-dev.1272+5c5d1f93c.zip
+        tar -xf zig-windows-x86_64-0.12.0-dev.1272+5c5d1f93c.zip
+#        Expand-Archive zig-windows-x86_64-0.12.0-dev.1261+bb0419599.zip -DestinationPath $HOME
+
+    - uses: seanmiddleditch/gha-setup-ninja@master
+
+    - name: Set up NASM
+      uses: ilammy/setup-nasm@v1.4.0
+
+    - name: Build BoringSSL
+      run: |
+        cd ${{ github.workspace }}
+        $env:PATH += ";$HOME/zig-windows-x86_64-0.12.0-dev.1272+5c5d1f93c/;"
+        zig build -Dtarget=x86_64-windows-msvc -Doptimize=ReleaseFast -Dasm=false
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3.1.3
+      with:
+        name: x86_64-windows-libcrypto+libssl+bssl
+        path: ${{ github.workspace }}/zig-out/**
+
+
+  build-apple:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: main-with-bazel
+
+    - name: Download Zig
+      run: |
+        cd ~
+        curl -L -O https://ziglang.org/builds/zig-linux-x86_64-$ZIG_VERSION.tar.xz
+        tar -xf zig-linux-x86_64-$ZIG_VERSION.tar.xz
+        echo "~/zig-linux-x86_64-$ZIG_VERSION/" >> $GITHUB_PATH
+
+    - name: Build with Zig build
+      run: zig build --verbose-cc -Dtarget=aarch64-macos -Doptimize=ReleaseFast
+    
+    - name: Upload Zig build
+      uses: actions/upload-artifact@v3.1.3
+      with:
+        name: aarch64-macos-libcrypto+libssl+bssl
+        path: ${{ github.workspace }}/zig-out/**
