@@ -6,7 +6,7 @@
     .dependencies = .{
         .boringssl = .{
             .url = "git+https://boringssl.googlesource.com/boringssl#main-with-bazel",
-            .hash = "122083d1229526b33eaa798ae226058dec26f68ad0bd04189fe3718784f3b197d816"
+            .hash = "12204d020cb4aae5a0b5428c3cabed6c7f15f75a0d150691c5567e4815b025d9e191"
         }
     }
 }
