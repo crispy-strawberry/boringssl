@@ -31,7 +31,7 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const @"asm" = b.option(bool, "asm", "Specify whether to use asm or not. Not using asm comes at a huge performance penalty.") orelse true;
     
-    const upstream = b.dependency("boringssl", .{});
+    const upstream = b.dependency("boring_upstream", .{});
 
     const sources_json = upstream.path("sources.json").getPath(b);
 
@@ -51,8 +51,12 @@ pub fn build(b: *std.Build) !void {
 
     b.installDirectory(.{ .source_dir = upstream.path("src/include"), .install_dir = .prefix, .install_subdir = "include" });
 
+    _ = b.addModule("boringssl", .{
+        .source_file = .{.path = "boringssl.zig"}
+    });
+
     const crypto_static_lib = b.addStaticLibrary(.{
-        .name = "crypto",
+        .name = "crypto_static",
         .optimize = optimize,
         .target = target,
     });
@@ -95,7 +99,6 @@ pub fn build(b: *std.Build) !void {
         }
     }
     for (source_files.crypto) |c_file| {
-    
         crypto_static_lib.addCSourceFile(.{
             .file = .{ .path = upstream.path(c_file).getPath(b) },
             .flags = &.{
@@ -110,7 +113,7 @@ pub fn build(b: *std.Build) !void {
     // } });
 
     const crypto_shared_lib = b.addSharedLibrary(.{
-        .name = "crypto",
+        .name = "crypto_shared",
         .optimize = optimize,
         .target = target,
     });
@@ -162,7 +165,7 @@ pub fn build(b: *std.Build) !void {
     }
 
     const ssl_static_lib = b.addStaticLibrary(.{
-        .name = "ssl",
+        .name = "ssl_static",
         .optimize = optimize,
         .target = target,
     });
@@ -195,7 +198,7 @@ pub fn build(b: *std.Build) !void {
     
 
     const ssl_shared_lib = b.addSharedLibrary(.{
-        .name = "ssl",
+        .name = "ssl_shared",
         .optimize = optimize,
         .target = target,
     });
