@@ -38,7 +38,7 @@ fails due to some reason on `x86_64-windows-gnu`. (not about missing pthread.h)
   const boringssl = b.dependency("boringssl", .{ .optimize = optimize, .target = target });
 
   // Replace exe with whatever you are using.
-  exe.addModule("string", string.module("string"));
+  exe.addModule("boringssl", boringssl.module("boringssl"));
 
   // use "crypto_shared" if you want to link against dynamic library
   exe.linkLibrary(boringssl.artifact("crypto_static")); 
